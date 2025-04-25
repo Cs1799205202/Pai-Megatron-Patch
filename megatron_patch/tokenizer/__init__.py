@@ -598,6 +598,12 @@ def build_tokenizer(args):
 
         tokenizer = _LLama3Tokenizer(args.load, args.extra_vocab_size)
         args.padded_vocab_size = tokenizer.vocab_size
+    
+    elif args.patch_tokenizer_type == 'KronosTokenizer':
+        from collections import namedtuple
+        KronosTokenizer = namedtuple('KronosTokenizer', ['eod'])
+        tokenizer = KronosTokenizer(eod=-1)
+        args.padded_vocab_size = 2**18
 
     elif args.patch_tokenizer_type == 'VicunaTokenizerFromHF':
         tokenizer = AutoTokenizer.from_pretrained(args.load,
