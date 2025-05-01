@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from transformers import AutoTokenizer, AutoProcessor
+import torch
 
 def _vocab_size_with_padding(orig_vocab_size, args):
     """Pad vocab size so it is divisible by model parallel size and
@@ -601,9 +602,53 @@ def build_tokenizer(args):
     
     elif args.patch_tokenizer_type == 'KronosTokenizer':
         from collections import namedtuple
-        KronosTokenizer = namedtuple('KronosTokenizer', ['eod'])
-        tokenizer = KronosTokenizer(eod=-1)
-        args.padded_vocab_size = 2**18
+        # KronosTokenizer = namedtuple('KronosTokenizer', ['eod'])
+        # tokenizer = KronosTokenizer(eod=-1)
+        # args.padded_vocab_size = 2**18
+        import sys
+        import os
+        top_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        sys.path.append(os.path.join(top_dir, 'kronos'))
+        from Model.kronos import KronosTokenizer
+        from megatron.core.datasets.megatron_tokenizer import MegatronTokenizer
+        class _KronosTokenizer(MegatronTokenizer):
+            def __init__(self, tokenizer_path):
+                super().__init__(tokenizer_path)
+                self.tokenizer = KronosTokenizer.from_pretrained(tokenizer_path)
+                self.tokenizer.eval()
+            
+            def __call__(self, data: torch.Tensor):
+                with torch.no_grad():
+                    return self.tokenizer.encode(data, half=False)
+            
+            @property
+            def vocab_size(self):
+                return 2**18
+            
+            @property
+            def eod(self):
+                return -1
+            
+            @property
+            def tokenize(self):
+                raise NotImplementedError('Should not be called')
+            
+            @property
+            def detokenize(self):
+                raise NotImplementedError('Should not be called')
+            
+            @property
+            def vocab(self):
+                raise NotImplementedError('Should not be called')
+            
+            @property
+            def inv_vocab(self):
+                raise NotImplementedError('Should not be called')
+            
+        
+        tokenizer = _KronosTokenizer("/ssdshare/share/cs/Kronos/result/ours/S1_9_S2_9_NH128_NL3_NRH256_TAGhf_tot_c/checkpoints/best_model")
+        args.padded_vocab_size = tokenizer.vocab_size
+   
 
     elif args.patch_tokenizer_type == 'VicunaTokenizerFromHF':
         tokenizer = AutoTokenizer.from_pretrained(args.load,

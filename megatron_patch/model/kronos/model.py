@@ -245,8 +245,59 @@ class GPTModel(LanguageModule):
         if decoder_input is not None:
             pass
         elif self.pre_process:
+            # First extract packed minute hour weekday day month, the packing logic (in kronos_preprocess_data.py) is like this:
+
+                # # Pack timestamps and tokens on CPU
+                # processed_batch = []
+                # for i in range(batch_size):
+                #     token_ids = token_ids_batch_cpu[i] # Shape [seq_length]
+                #     timestamps = timestamp_batch_list[i] # Shape [seq_length, 5]
+                #     combined_chunk = np.zeros(seq_length, dtype=np.int64)
+
+                #     for t in range(seq_length):
+                #         token_id = token_ids[t]
+                #         ts = timestamps[t] # minute, hour, weekday, day, month
+
+                #         packed_ts = (
+                #             (ts[0] << TS_MINUTE_SHIFT) |
+                #             (ts[1] << TS_HOUR_SHIFT) |
+                #             (ts[2] << TS_WDAY_SHIFT) |
+                #             (ts[3] << TS_DAY_SHIFT) |
+                #             (ts[4] << TS_MONTH_SHIFT)
+                #         )
+                #         combined_value = (packed_ts << TS_PACKED_SHIFT) | (token_id << TOKEN_SHIFT)
+                #         combined_chunk[t] = combined_value
+                #     processed_batch.append(combined_chunk)
+            
+            # Constants for timestamp packing
+            TS_MINUTE_BITS = 6
+            TS_HOUR_BITS = 5
+            TS_WDAY_BITS = 3
+            TS_DAY_BITS = 5
+            TS_MONTH_BITS = 4
+            TOKEN_BITS = 18
+
+            TS_MONTH_SHIFT = 0
+            TS_DAY_SHIFT = TS_MONTH_SHIFT + TS_MONTH_BITS
+            TS_WDAY_SHIFT = TS_DAY_SHIFT + TS_DAY_BITS
+            TS_HOUR_SHIFT = TS_WDAY_SHIFT + TS_WDAY_BITS
+            TS_MINUTE_SHIFT = TS_HOUR_SHIFT + TS_HOUR_BITS
+            TS_TOTAL_BITS = TS_MINUTE_SHIFT + TS_MINUTE_BITS # Should be 23
+
+            TOKEN_SHIFT = 0
+            TS_PACKED_SHIFT = TOKEN_SHIFT + TOKEN_BITS # Timestamp section starts after token bits
+
+            minute = (input_ids >> TS_MINUTE_SHIFT >> TS_PACKED_SHIFT) & 0x3F
+            hour = (input_ids >> TS_HOUR_SHIFT >> TS_PACKED_SHIFT) & 0x1F
+            weekday = (input_ids >> TS_WDAY_SHIFT >> TS_PACKED_SHIFT) & 0x7
+            day = (input_ids >> TS_DAY_SHIFT >> TS_PACKED_SHIFT) & 0x1F
+            month = (input_ids >> TS_MONTH_SHIFT >> TS_PACKED_SHIFT) & 0xF
+
+            input_ids = (input_ids >> TOKEN_SHIFT) & 0x3FFFF
+
             decoder_input = self.embedding(
-                input_ids=input_ids, position_ids=position_ids
+                input_ids=input_ids, position_ids=position_ids,
+                timestamp=(minute, hour, weekday, day, month)
             )
         else:
             # intermediate stage of pipeline

@@ -54,7 +54,7 @@ DISTRIBUTED_ARGS="--nproc_per_node $GPUS_PER_NODE --nnodes $NNODES --node_rank $
 EXTRA_VOCAB_SIZE=0
 
 ### BASE CONFIG ###
-MODEL_SIZE=20M
+MODEL_SIZE=100M
 BATCH_SIZE=1
 GLOBAL_BATCH_SIZE=8
 LR=1e-5
@@ -68,7 +68,7 @@ PR=bf16
 TP=2
 PP=2
 CP=1
-SP=true
+SP=false
 DO=true
 FL=true
 SFT=false
@@ -80,7 +80,102 @@ OPTIMIZER_OFFLOAD=false
 SAVE_INTERVAL=50
 # DATASET_PATH=/ssdshare/share/cs/llama3-datasets/wudao_llama3bpe_content_document
 # VALID_DATASET_PATH=/ssdshare/share/cs/llama3-datasets/wudao_llama3bpe_content_document
-DATASET_PATH=/ssdshare/share/cs/data/Kronos_Data_Megatron/CN-F_1
+# TRAIN_DATASET_PATH=" \
+#     0.7 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_1 \
+#     0.3 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_5 \
+# "
+# VALID_DATASET_PATH=" \
+#     0.7 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_1 \
+#     0.3 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_5 \
+# "
+# dt_sample_prob = {
+#     'CN-F': {
+#         1: 0.1 * 0.8,
+#         5: 0.1 * 0.16,
+#         15: 0.1 * 0.037,
+#         1440: 0.1 * 0.003
+#     },
+#     'CN-ETF': {
+#         1: 0.1 * 0.8,
+#         5: 0.1 * 0.195,
+#         1440: 0.1 * 0.005
+#     },
+#     'Crypto-P': {
+#         1: 0.20 * 0.65,
+#         5: 0.20 * 0.20,
+#         15: 0.20 * 0.10,
+#         60: 0.20 * 0.045,
+#         1440: 0.20 * 0.005
+#     },
+#     'Crypto-S': {
+#         1: 0.05 * 0.65,
+#         5: 0.05 * 0.20,
+#         15: 0.05 * 0.10,
+#         60: 0.05 * 0.045,
+#         1440: 0.05 * 0.005
+#     },
+#     'CN-A': {
+#         1: 0.25 * 0.80,
+#         5: 0.25 * 0.18,
+#         1440: 0.25 * 0.02,
+#     },
+#     'US-Eq': {
+#         1: 0.25 * 0.80,
+#         5: 0.25 * 0.18,
+#         1440: 0.25 * 0.02
+#     }
+# }
+
+TRAIN_DATASET_PATH=" \
+    0.08 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_1 \
+    0.016 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_5 \
+    0.0037 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_15 \
+    0.0003 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_1440 \
+    0.08 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-ETF_1 \
+    0.0195 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-ETF_5 \
+    0.0005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-ETF_1440 \
+    0.13 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_1 \
+    0.04 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_5 \
+    0.02 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_15 \
+    0.009 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_60 \
+    0.001 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_1440 \
+    0.0325 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_1 \
+    0.01 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_5 \
+    0.005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_15 \
+    0.00225 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_60 \
+    0.00025 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_1440 \
+    0.2 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-A_1 \
+    0.045 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-A_5 \
+    0.005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-A_1440 \
+    0.2 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/US-Eq_1 \
+    0.045 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/US-Eq_5 \
+    0.005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/US-Eq_1440 \
+"
+VALID_DATASET_PATH=" \
+    0.08 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_1 \
+    0.016 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_5 \
+    0.0037 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_15 \
+    0.0003 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-F_1440 \
+    0.08 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-ETF_1 \
+    0.0195 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-ETF_5 \
+    0.0005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-ETF_1440 \
+    0.13 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_1 \
+    0.04 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_5 \
+    0.02 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_15 \
+    0.009 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_60 \
+    0.001 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-P_1440 \
+    0.0325 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_1 \
+    0.01 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_5 \
+    0.005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_15 \
+    0.00225 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_60 \
+    0.00025 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/Crypto-S_1440 \
+    0.2 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-A_1 \
+    0.045 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-A_5 \
+    0.005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/CN-A_1440 \
+    0.2 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/US-Eq_1 \
+    0.045 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/US-Eq_5 \
+    0.005 /ssdshare/share/cs/data/Kronos_Data_Mcore/train/US-Eq_1440 \
+"
 # PRETRAIN_CHECKPOINT_PATH=/ssdshare/share/cs/llama3-ckpts/Meta-Llama-3.1-8B/mcore-tp2-pp2
 PRETRAIN_CHECKPOINT_PATH=none
 
@@ -89,7 +184,7 @@ PRETRAIN_CHECKPOINT_PATH=none
 # WARMUP_TOKENS=100
 
 # 100 * 8 * 512
-TRAIN_TOKENS=409600
+TRAIN_TOKENS=4096000
 WARMUP_TOKENS=0
 ###############################
 
@@ -110,6 +205,20 @@ HIDDEN_SIZE=512
 NUM_ATTN_HEADS=8
 INTERMEDIATE_SIZE=1280
 NUM_KEY_VALUE_HEADS=8
+MAX_POSITION_EMBEDDINGS=131072
+
+gqa_options=" \
+		    --group-query-attention \
+		    --num-query-groups ${NUM_KEY_VALUE_HEADS}"
+
+
+elif [ $MODEL_SIZE = 100M ]; then
+
+NUM_LAYERS=12
+HIDDEN_SIZE=832
+NUM_ATTN_HEADS=16
+INTERMEDIATE_SIZE=2048
+NUM_KEY_VALUE_HEADS=16
 MAX_POSITION_EMBEDDINGS=131072
 
 gqa_options=" \
@@ -274,9 +383,14 @@ if [ ${MP_DATASET_TYPE} = "raw" ]; then
         --dataloader-type cyclic \
         --dataset JSON-SFT"
 else 
+    # dataset_option=" \
+    #     --data-path ${DATASET_PATH} \
+    #     --split 99,1,0 \
+    #     --dataset MMAP"
     dataset_option=" \
-        --data-path ${DATASET_PATH} \
-        --split 99,1,0 \
+        --train-data-path ${TRAIN_DATASET_PATH} \
+        --valid-data-path ${VALID_DATASET_PATH} \
+        --dataloader-type cyclic \
         --dataset MMAP"
 fi
 
@@ -353,7 +467,7 @@ megatron_options="  \
         --position-embedding-type rope \
         --untie-embeddings-and-output-weights \
         --disable-bias-linear \
-        --rotary-base 500000 \
+        --rotary-base 10000 \
         --no-save-optim \
         --wandb-project TimeSeries \
         --wandb-exp-name TimeSeries-mcore-tp2-pp2 \

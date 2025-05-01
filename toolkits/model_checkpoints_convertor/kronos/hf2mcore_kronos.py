@@ -198,10 +198,13 @@ def load_megatron_model(args):
                     except:
                         mid_state[k].append(v)
         for k, v in mid_state.items():
+            print("Adding key: ", k)
             if not isinstance(v[0], torch.Tensor) or "norm" in k:
                 target_v = v[0]
             elif 'extra_state' in k:
                 target_v = None
+            elif "minute_embedding" in k or "hour_embedding" in k or "weekday_embedding" in k or "day_embedding" in k or "month_embedding" in k:
+                target_v = v[0]
             elif "embedding" in k or "output_layer" in k:
                 target_v = torch.cat(v, dim=0)
             elif "linear_proj" in k or "linear_fc2" in k:
@@ -954,6 +957,22 @@ def convert_checkpoint_from_megatron_to_transformers(mgmodel: GPTModel, hfmodel:
             mgmodel.embedding.word_embeddings.weight
         )
 
+        hfmodel.time_emb.minute_embed.weight.copy_(
+            mgmodel.embedding.minute_embedding.weight
+        )
+        hfmodel.time_emb.hour_embed.weight.copy_(
+            mgmodel.embedding.hour_embedding.weight
+        )
+        hfmodel.time_emb.weekday_embed.weight.copy_(
+            mgmodel.embedding.weekday_embedding.weight
+        )
+        hfmodel.time_emb.day_embed.weight.copy_(
+            mgmodel.embedding.day_embedding.weight
+        )
+        hfmodel.time_emb.month_embed.weight.copy_(
+            mgmodel.embedding.month_embedding.weight
+        )
+
         # 2. rotary embeddings, can be skipped with option `--no-rotary-embed-copy`
         if not args.no_rotary_embed_copy:
             # hfmodel.model.rotary_emb.inv_freq.copy_(mgmodel.rotary_pos_emb.inv_freq)
@@ -1150,15 +1169,15 @@ def main():
         # hf_model = AutoModelForCausalLM.from_pretrained(**load_args).cpu()
         hf_model = KronosU(
             s_bits=18,
-            n_layers=6,
-            d_model=512,
-            n_heads=8,
-            ff_dim=1280,
+            n_layers=args.num_layers,
+            d_model=args.hidden_size,
+            n_heads=args.num_attention_heads,
+            ff_dim=args.ffn_hidden_size,
             ffn_dropout_p=0.0,
             attn_dropout_p=0.0,
             resid_dropout_p=0.0,
             token_dropout_p=0.0,
-            learn_te=False
+            learn_te=True
         )
         mg_model = load_megatron_model(args).cpu()
         convert_checkpoint_from_megatron_to_transformers(mg_model, hf_model, args)

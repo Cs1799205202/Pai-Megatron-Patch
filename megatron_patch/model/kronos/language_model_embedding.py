@@ -1,6 +1,6 @@
 # Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 
-from typing import Literal
+from typing import Literal, Tuple, Optional
 
 import torch
 from torch import Tensor
@@ -53,6 +53,18 @@ class LanguageModelEmbedding(MegatronModule):
             config=self.config,
         )
 
+        minute_size = 60
+        hour_size = 24
+        weekday_size = 7
+        day_size = 32
+        month_size = 13
+
+        self.minute_embedding = torch.nn.Embedding(minute_size, self.config.hidden_size)
+        self.hour_embedding = torch.nn.Embedding(hour_size, self.config.hidden_size)
+        self.weekday_embedding = torch.nn.Embedding(weekday_size, self.config.hidden_size)
+        self.day_embedding = torch.nn.Embedding(day_size, self.config.hidden_size)
+        self.month_embedding = torch.nn.Embedding(month_size, self.config.hidden_size)
+
         # Position embedding (serial).
         if self.add_position_embedding:
             self.position_embeddings = torch.nn.Embedding(
@@ -80,13 +92,23 @@ class LanguageModelEmbedding(MegatronModule):
         """Zero out all parameters in embedding."""
         self.word_embeddings.weight.data.fill_(0)
         self.word_embeddings.weight.shared = True
+        self.minute_embedding.weight.data.fill_(0)
+        self.minute_embedding.weight.shared = True
+        self.hour_embedding.weight.data.fill_(0)
+        self.hour_embedding.weight.shared = True
+        self.weekday_embedding.weight.data.fill_(0)
+        self.weekday_embedding.weight.shared = True
+        self.day_embedding.weight.data.fill_(0)
+        self.day_embedding.weight.shared = True
+        self.month_embedding.weight.data.fill_(0)
+        self.month_embedding.weight.shared = True
         self.position_embeddings.weight.data.fill_(0)
         self.position_embeddings.weight.shared = True
         if self.num_tokentypes > 0:
             self.tokentype_embeddings.weight.data.fill_(0)
             self.tokentype_embeddings.weight.shared = True
 
-    def forward(self, input_ids: Tensor, position_ids: Tensor, tokentype_ids: int = None) -> Tensor:
+    def forward(self, input_ids: Tensor, position_ids: Tensor, timestamp: Optional[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]] = None, tokentype_ids: int = None) -> Tensor:
         """Forward pass of the embedding module.
 
         Args:
@@ -98,6 +120,27 @@ class LanguageModelEmbedding(MegatronModule):
             Tensor: The output embeddings
         """
         word_embeddings = self.word_embeddings(input_ids)
+        
+        if timestamp is not None:
+            # print(f"hahahahaha input_ids' shape: {input_ids.shape}, minute's shape: {timestamp[0].shape}")
+            # print(f"range of minute: {timestamp[0].min()}, {timestamp[0].max()}")
+            # print(f"range of hour: {timestamp[1].min()}, {timestamp[1].max()}")
+            # print(f"range of weekday: {timestamp[2].min()}, {timestamp[2].max()}")
+            # print(f"range of day: {timestamp[3].min()}, {timestamp[3].max()}")
+            # print(f"range of month: {timestamp[4].min()}, {timestamp[4].max()}")
+
+            # print()
+            minute_embedding = self.minute_embedding(timestamp[0])
+            hour_embedding = self.hour_embedding(timestamp[1])
+            weekday_embedding = self.weekday_embedding(timestamp[2])
+            day_embedding = self.day_embedding(timestamp[3])
+            month_embedding = self.month_embedding(timestamp[4])
+            timestamp_embedding = minute_embedding + hour_embedding + weekday_embedding + day_embedding + month_embedding
+            # print("Original word_embeddings shape: ", word_embeddings.shape)
+            # print("Timestamp embedding shape: ", timestamp_embedding.shape)
+            word_embeddings = word_embeddings + timestamp_embedding
+            # print("New word_embeddings shape: ", word_embeddings.shape)
+
         if self.add_position_embedding:
             position_embeddings = self.position_embeddings(position_ids)
             embeddings = word_embeddings + position_embeddings

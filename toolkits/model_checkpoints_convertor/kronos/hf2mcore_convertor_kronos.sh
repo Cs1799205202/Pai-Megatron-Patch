@@ -16,9 +16,9 @@ START_TIME=$SECONDS
 MASTER_ADDR=localhost
 MASTER_PORT=$(shuf -n 1 -i 10000-65535)
 
-MODEL_SIZE=20M
-SOURCE_CKPT_PATH=/ssdshare/share/cs/Kronos_Checkpoint/mcore-tp2-pp2/checkpoint/pretrain-mcore-llama3-1-20M-lr-1e-5-minlr-1e-6-bs-1-gbs-8-seqlen-512-pr-bf16-tp-2-pp-2-cp-1-ac-false-do-true-sp-true-ti-100-wi-0           # Source Megatron-Core checkpoint path (e.g., /path/to/mcore-tp2-pp2)
-TARGET_CKPT_PATH=/ssdshare/share/cs/Kronos_Checkpoint/20M-from-mcore
+MODEL_SIZE=100M
+SOURCE_CKPT_PATH=/ssdshare/share/cs/Kronos_Checkpoint/mcore-tp2-pp2/checkpoint/pretrain-mcore-llama3-1-100M-lr-1e-5-minlr-1e-6-bs-1-gbs-8-seqlen-512-pr-bf16-tp-2-pp-2-cp-1-ac-false-do-true-sp-false-ti-1000-wi-0
+TARGET_CKPT_PATH=/ssdshare/share/cs/Kronos_Checkpoint/100M-from-mcore
 TP=2
 PP=2
 mg2hf=true
@@ -40,13 +40,30 @@ NUM_ATTN_HEADS=8
 INTERMEDIATE_SIZE=1280
 NUM_KV_HEADS=8
 VOCAB_SIZE=262144
-ROPE_THETA=500000
+ROPE_THETA=10000
 gqa_options=" \
 		    --group-query-attention \
 		    --num-query-groups 8"
 EXTRA_VOCAB_SIZE=0
 
 cpu_options=""
+
+elif [ $MODEL_SIZE = 100M ]; then
+
+NUM_LAYERS=12
+HIDDEN_SIZE=832
+NUM_ATTN_HEADS=16
+INTERMEDIATE_SIZE=2048
+NUM_KV_HEADS=16
+VOCAB_SIZE=262144
+ROPE_THETA=10000
+gqa_options=" \
+		    --group-query-attention \
+		    --num-query-groups 16"
+EXTRA_VOCAB_SIZE=0
+
+cpu_options=""
+
 
 elif [ $MODEL_SIZE = 70B ]; then
 
